@@ -1,0 +1,12 @@
+{
+  "extends": "agents/tsconfig",
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "env.d.ts",
+    "worker-configuration.d.ts"
+  ]
+}

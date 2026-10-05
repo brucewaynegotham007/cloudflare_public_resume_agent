@@ -1,0 +1,53 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "resume-agent",
+  "main": "src/server.ts",
+  "compatibility_date": "2026-09-24",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "ai": {
+    "binding": "AI",
+    "remote": true
+  },
+
+  "browser": {
+    "binding": "BROWSER",
+    "remote": true
+  },
+
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/agents/*", "/api/*"]
+  },
+
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ResumeAgent",
+        "class_name": "ResumeAgent"
+      }
+    ]
+  },
+
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["ResumeAgent"]
+    }
+  ],
+
+  "workflows": [
+    {
+      "name": "resume-workflow",
+      "binding": "RESUME_WORKFLOW",
+      "class_name": "ResumeWorkflow"
+    }
+  ],
+
+  "vars": {
+    "GITHUB_OWNER": "REPLACE_WITH_GITHUB_OWNER",
+    "GITHUB_REPO": "REPLACE_WITH_PRIVATE_RESUME_REPO",
+    "RESUME_FILE": "resume.tex",
+    "RUNNER_WORKFLOW": "resume-agent-runner.yml"
+  }
+}

@@ -1,0 +1,102 @@
+name: Resume Agent Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: "Resume Agent task ID"
+        required: true
+        type: string
+      attempt:
+        description: "Model revision number"
+        required: true
+        type: string
+      retry:
+        description: "Runner retry number"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  run-tools:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - name: Checkout private resume repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Checkout Resume Agent tools
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ vars.AGENT_APP_REPO }}
+          ref: main
+          path: _resume_agent
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install Python dependencies
+        run: python -m pip install -r _resume_agent/tools/requirements.txt
+
+      - name: Set up Tectonic
+        uses: wtfjoke/setup-tectonic@v4
+
+      - name: Compile resume
+        id: compile
+        continue-on-error: true
+        run: python _resume_agent/tools/compile_resume.py
+
+      - name: Validate resume
+        id: validate
+        continue-on-error: true
+        if: steps.compile.outcome == 'success'
+        run: python _resume_agent/tools/validate_resume.py
+
+      - name: Publish validated PDF
+        id: publish
+        continue-on-error: true
+        if: steps.compile.outcome == 'success' && steps.validate.outcome == 'success'
+        run: |
+          git config user.name "resume-agent"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add resume.pdf
+          if git diff --cached --quiet; then
+            echo '{"success":true,"message":"PDF already current; nothing to commit."}' > push-result.json
+          else
+            git commit -m "Generate validated resume PDF"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+            echo '{"success":true,"message":"Validated PDF published."}' > push-result.json
+          fi
+
+      - name: Record failure
+        if: always()
+        run: |
+          if [ -f push-result.json ]; then
+            exit 0
+          fi
+
+          if [ "${{ steps.compile.outcome }}" != "success" ]; then
+            echo '{"success":false,"message":"Compilation failed."}' > push-result.json
+          elif [ "${{ steps.validate.outcome }}" != "success" ]; then
+            echo '{"success":false,"message":"Validation failed."}' > push-result.json
+          else
+            echo '{"success":false,"message":"GitHub publish failed."}' > push-result.json
+          fi
+
+      - name: Send result back to Resume Agent
+        if: always()
+        env:
+          TASK_ID: ${{ inputs.task_id }}
+          ATTEMPT: ${{ inputs.attempt }}
+          RETRY: ${{ inputs.retry }}
+          AGENT_CALLBACK_URL: ${{ vars.AGENT_CALLBACK_URL }}
+          AGENT_CALLBACK_TOKEN: ${{ secrets.AGENT_CALLBACK_TOKEN }}
+        run: python _resume_agent/tools/callback_result.py
