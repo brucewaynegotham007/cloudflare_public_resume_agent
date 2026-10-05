@@ -115,7 +115,7 @@ export class ResumeWorkflow extends AgentWorkflow<ResumeAgent, ResumeWorkflowPar
       status: "analyzing",
       statusMessage: `Using ${context.baseBranch} as the starting point and analyzing the role...`,
       taskId,
-      workflowId: this.instanceId,
+      workflowId: taskId,
       error: null,
     });
 

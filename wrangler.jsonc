@@ -45,8 +45,8 @@
   ],
 
   "vars": {
-    "GITHUB_OWNER": "REPLACE_WITH_GITHUB_OWNER",
-    "GITHUB_REPO": "REPLACE_WITH_PRIVATE_RESUME_REPO",
+    "GITHUB_OWNER": "brucewaynegotham007",
+    "GITHUB_REPO": "cloudflare_private_resume_repo",
     "RESUME_FILE": "resume.tex",
     "RUNNER_WORKFLOW": "resume-agent-runner.yml"
   }
